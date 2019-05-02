@@ -9,6 +9,7 @@ The file follows the following format:
      Any command that requires arguments must have those arguments in the second line.
      The commands are as follows:
 
+
          push: push a copy of the current top of the coordinate system stack to the stack
 
          pop: pop off the current top of the coordinate system stack
@@ -18,6 +19,7 @@ The file follows the following format:
              2) Multiply that matrix by the current top of the coordinate system stack
              3) Draw the shape to the screen
              4) Clear the temporary matrix
+
 
          sphere: add a sphere to the POLYGON matrix -
                  takes 4 arguemnts (cx, cy, cz, r)
@@ -57,13 +59,15 @@ The file follows the following format:
 
 See the file script for an example of the file format
 """
-ARG_COMMANDS = [ 'box', 'sphere', 'torus', 'circle', 'bezier', 'hermite', 'line', 'scale', 'move', 'rotate', 'save']
+ARG_COMMANDS = [ 'box', 'sphere', 'torus', 'circle', 'bezier', 'hermite', 'line', 'scale', 'move', 'rotate', 'save' ]
 
-def parse_file( fname, edges, polygons, csystems, screen, zbuffer, color ):
+def parse_file( fname, edges, polygons, csystems, screen, zbuffer, color,view, ambient, light, areflect, dreflect, sreflect):
 
     f = open(fname)
     lines = f.readlines()
 
+    clear_screen(screen)
+    clear_zbuffer(zbuffer)
     step = 100
     step_3d = 20
 
@@ -76,13 +80,19 @@ def parse_file( fname, edges, polygons, csystems, screen, zbuffer, color ):
             c+= 1
             args = lines[c].strip().split(' ')
 
-        if line == 'sphere':
+        if line == 'push':
+            csystems.append( [x[:] for x in csystems[-1]] )
+
+        elif line == 'pop':
+            csystems.pop()
+
+        elif line == 'sphere':
             #print 'SPHERE\t' + str(args)
             add_sphere(polygons,
                        float(args[0]), float(args[1]), float(args[2]),
                        float(args[3]), step_3d)
-            matrix_mult( csystems[-1], polygons )
-            draw_polygons(polygons, screen, zbuffer, color)
+            matrix_mult(csystems[-1], polygons)
+            draw_polygons(polygons, screen, zbuffer, view, ambient, light, areflect, dreflect, sreflect)
             polygons = []
 
         elif line == 'torus':
@@ -90,16 +100,17 @@ def parse_file( fname, edges, polygons, csystems, screen, zbuffer, color ):
             add_torus(polygons,
                       float(args[0]), float(args[1]), float(args[2]),
                       float(args[3]), float(args[4]), step_3d)
-            matrix_mult( csystems[-1], polygons )
-            draw_polygons(polygons, screen, zbuffer, color)
-            polygons = []	
+            matrix_mult(csystems[-1], polygons)
+            draw_polygons(polygons, screen, zbuffer, view, ambient, light, areflect, dreflect, sreflect)
+            polygons = []
+
         elif line == 'box':
             #print 'BOX\t' + str(args)
             add_box(polygons,
                     float(args[0]), float(args[1]), float(args[2]),
                     float(args[3]), float(args[4]), float(args[5]))
-            matrix_mult( csystems[-1], polygons )
-            draw_polygons(polygons, screen, zbuffer, color)
+            matrix_mult(csystems[-1], polygons)
+            draw_polygons(polygons, screen, zbuffer, view, ambient, light, areflect, dreflect, sreflect)
             polygons = []
 
         elif line == 'circle':
@@ -107,8 +118,8 @@ def parse_file( fname, edges, polygons, csystems, screen, zbuffer, color ):
             add_circle(edges,
                        float(args[0]), float(args[1]), float(args[2]),
                        float(args[3]), step)
-            matrix_mult( csystems[-1], polygons)
-            draw_edges(edges, screen, zbuffer, color)
+            matrix_mult(csystems[-1], edges)
+            draw_lines(edges, screen, zbuffer, color)
             edges = []
 
         elif line == 'hermite' or line == 'bezier':
@@ -119,31 +130,31 @@ def parse_file( fname, edges, polygons, csystems, screen, zbuffer, color ):
                       float(args[4]), float(args[5]),
                       float(args[6]), float(args[7]),
                       step, line)
-            matrix_mult( csystems[-1], polygons)
-            draw_edges(edges, screen, zbuffer, color)
+            matrix_mult(csystems[-1], edges)
+            draw_lines(edges, screen, zbuffer, color)
             edges = []
-	
+
         elif line == 'line':
             #print 'LINE\t' + str(args)
-
             add_edge( edges,
                       float(args[0]), float(args[1]), float(args[2]),
                       float(args[3]), float(args[4]), float(args[5]) )
-            matrix_mult( csystems[-1], polygons)
-            draw_edges(edges, screen, zbuffer, color)
+            matrix_mult(csystems[-1], edges)
+            draw_lines(edges, screen, zbuffer, color)
             edges = []
-    
+
         elif line == 'scale':
             #print 'SCALE\t' + str(args)
             t = make_scale(float(args[0]), float(args[1]), float(args[2]))
             matrix_mult(csystems[-1], t)
-            csystems[-1] = t
+            csystems[-1] = [x[:] for x in t]
+
 
         elif line == 'move':
             #print 'MOVE\t' + str(args)
             t = make_translate(float(args[0]), float(args[1]), float(args[2]))
             matrix_mult(csystems[-1], t)
-            csystems[-1] = t
+            csystems[-1] = [x[:] for x in t]
 
         elif line == 'rotate':
             #print 'ROTATE\t' + str(args)
@@ -156,27 +167,23 @@ def parse_file( fname, edges, polygons, csystems, screen, zbuffer, color ):
             else:
                 t = make_rotZ(theta)
             matrix_mult(csystems[-1], t)
-            csystems[-1] = t
+            csystems[-1] = [x[:] for x in t]
 
-        elif line == 'display':
-            display(screen)
+        elif line == 'ident':
+            ident(transform)
 
-        elif line == 'save':
-            save_extension(screen, args[0])
+        elif line == 'apply':
+            matrix_mult( transform, edges )
+            matrix_mult( transform, polygons )
 
-        elif line == 'push':
-            push(csystems)
-	    
-        elif line == 'pop':
-            csystems.pop()
-    
-        elif line == 'quit':
-            return
-        
         elif line == 'clear':
             clear_screen(screen)
             clear_zbuffer(zbuffer)
-        
-        elif line == 'clear_zbuffer':
-            clear_screen(zbuffer)
+
+        elif line == 'display' or line == 'save':
+            #clear_screen(screen)
+            if line == 'display':
+                display(screen)
+            else:
+                save_extension(screen, args[0])
         c+= 1

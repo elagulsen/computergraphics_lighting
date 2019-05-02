@@ -9,7 +9,7 @@ RED = 0
 GREEN = 1
 BLUE = 2
 
-DEFAULT_COLOR = [0, 0, 0]
+DEFAULT_COLOR = [255, 255, 255]
 
 def new_screen( width = XRES, height = YRES ):
     screen = []
@@ -21,18 +21,16 @@ def new_screen( width = XRES, height = YRES ):
     return screen
 
 def new_zbuffer( width = XRES, height = YRES ):
-    screen = []
+    zb = []
     for y in range( height ):
-        row = []
-        screen.append( row )
-        for x in range( width ):
-            screen[y].append( float('-inf' ))
-    return screen
+        row = [ float('-inf') for x in range(width) ]
+        zb.append( row )
+    return zb
 
-def plot( screen, zbuffer, color, x, y, z=0 ):
-    x, y = int(x), int(y)
+def plot( screen, zbuffer, color, x, y, z ):
     newy = YRES - 1 - y
-    if ( x >= 0 and x < XRES and newy >= 0 and newy < YRES and z > zbuffer[newy][x]-1):
+    z = int((z * 1000)) / 1000.0
+    if ( x >= 0 and x < XRES and newy >= 0 and newy < YRES and zbuffer[newy][x] <= z):
         screen[newy][x] = color[:]
         zbuffer[newy][x] = z
 
@@ -40,11 +38,11 @@ def clear_screen( screen ):
     for y in range( len(screen) ):
         for x in range( len(screen[y]) ):
             screen[y][x] = DEFAULT_COLOR[:]
-            
-def clear_zbuffer( zbuffer):
-    for y in range( len(zbuffer) ):
-        for x in range( len(zbuffer[y]) ):
-            zbuffer[y][x] = float('-inf')
+
+def clear_zbuffer( zb ):
+    for y in range( len(zb) ):
+        for x in range( len(zb[y]) ):
+            zb[y][x] = float('-inf')
 
 def save_ppm( screen, fname ):
     f = open( fname, 'w' )
