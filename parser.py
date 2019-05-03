@@ -69,7 +69,7 @@ def parse_file( fname, edges, polygons, csystems, screen, zbuffer, color,view, a
     clear_screen(screen)
     clear_zbuffer(zbuffer)
     step = 100
-    step_3d = 20
+    step_3d = 30
 
     c = 0
     while c < len(lines):

@@ -9,30 +9,26 @@ import math
 view = [0,
         0,
         1];
-ambient = [50,
-           50,
-           50]
+ambient = [38, 23, 11]
 light = [[0.5,
           0.75,
           1],
-         [0,
-          255,
-          255]]
-areflect = [0.1,
-            0.1,
-            0.1]
+         [244, 164, 100]]
+areflect = [0.25,
+            0.25,
+            0.25]
 dreflect = [0.5,
             0.5,
             0.5]
-sreflect = [1,
-            0.5,
-            0.5]
+sreflect = [0.15,
+            0.15,
+            0.15]
 
 
 
 screen = new_screen()
 zbuffer = new_zbuffer()
-color = [ 0, 255, 0 ]
+color = [ 0, 0, 0 ]
 edges = []
 polygons = []
 t = new_matrix()
@@ -40,4 +36,4 @@ ident(t)
 csystems = [ t ]
 
 
-parse_file( 'script', edges, polygons, csystems, screen, zbuffer, color, view, ambient, light, areflect, dreflect, sreflect)
+parse_file( 'new_script', edges, polygons, csystems, screen, zbuffer, color, view, ambient, light, areflect, dreflect, sreflect)
